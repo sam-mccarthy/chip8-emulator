@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.29)
 project(chip8_emulator)
 
 set(CMAKE_CXX_STANDARD 20)
-set(SRC_FILES src/main.cpp src/system.cpp src/chip8.cpp)
+set(SRC_FILES src/main.cpp src/system.cpp src/chip8.cpp src/octo.cpp)
 
 find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
 find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)
