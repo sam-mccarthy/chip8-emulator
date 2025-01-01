@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <deque>
 
 class System {
 public:
@@ -20,7 +21,7 @@ private:
     uint8_t _sound_timer;
     bool _sound;
 
-    uint16_t _stack[16];
+    std::deque<uint16_t> _stack;
 
     bool _keys[16];
     int _cycles;
