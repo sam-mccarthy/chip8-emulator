@@ -6,7 +6,23 @@
 System::System(const uint8_t* program, size_t size) {
     _program_counter = 0x200;
 
+    _display_width = 64;
+    _display_height = 32;
+    _display_size = _display_width / 8 * _display_height;
+
+    _display_buffer = new uint8_t[_display_size];
+
+    _index_register = 0;
+    _delay_timer = 0;
+    _sound_timer = 0;
+    _sound = false;
+
+    _cycles = 0;
+
+    memset(_keys, 0, 16);
     memset(_memory, 0, 4096);
+    memset(_registers, 0, 16);
+    memset(_display_buffer, 0, _display_size);
     uint8_t font[5 * 16] = {0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
                             0x20, 0x60, 0x20, 0x20, 0x70, // 1
                             0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -40,7 +56,7 @@ void System::run_cycle() {
     uint8_t* Y = _registers + ((NN - N) >> 4);
 
     std::map<uint16_t, std::function<void(void)>> functions = {
-            {0x00E0, [&](){ std::fill(std::begin(_display_buffer), std::end(_display_buffer), 0); }},
+            {0x00E0, [&](){ std::fill(_display_buffer, _display_buffer + _display_size, 0); }},
             {0x00EE, [&](){
                 if(_stack.empty()) std::cout<<"";
                 _program_counter = _stack.front();
@@ -71,16 +87,16 @@ void System::run_cycle() {
             {0xB000, [&](){ _program_counter = NNN + _registers[0]; }},
             {0xC000, [&](){ *X = rand() & NN; }},
             {0xD000, [&](){
-                uint8_t x = *X % 64;
+                uint8_t x = *X % _display_width;
                 // Our display is stored as bits, so we need to offset if we happen to draw to two bytes at once.
                 uint8_t offset = *X % 8;
 
-                uint8_t y = *Y % 32;
+                uint8_t y = *Y % _display_height;
                 for(int i = 0; i < N; i++){
-                    if(offset == 0) _display_buffer[(x / 8) * 32 + y + i] ^= _memory[_index_register + i];
-                    _display_buffer[x * 32 + y + i] ^= _memory[_index_register + i] >> offset;
-                    if(x + 8 <= 64)
-                        _display_buffer[(x / 8 + 1) * 32 + y + i] ^= _memory[_index_register + i] << (8 - offset);
+                    if(offset == 0) _display_buffer[(x / 8) * _display_height + y + i] ^= _memory[_index_register + i];
+                    _display_buffer[x * _display_height + y + i] ^= _memory[_index_register + i] >> offset;
+                    if(x + 8 <= _display_width)
+                        _display_buffer[(x / 8 + 1) * _display_height + y + i] ^= _memory[_index_register + i] << (8 - offset);
                 }
             }},
             {0xE09E, [&](){ if(_keys[*X]) _program_counter++; }},

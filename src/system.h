@@ -6,7 +6,7 @@
 
 class System {
 public:
-    System(const std::string& filename);
+    System(const uint8_t* program, size_t size);
     void run_cycle();
 private:
     uint8_t _memory[4096];
@@ -17,7 +17,11 @@ private:
 
     // 64 x 32 display, where each bit is one pixel.
     // Stored column-major for drawing simplicity
-    uint8_t _display_buffer[(64 / 8) * 32];
+    uint8_t* _display_buffer;
+
+    uint8_t _display_width;
+    uint8_t _display_height;
+    uint8_t _display_size;
 
     uint8_t _delay_timer;
     uint8_t _sound_timer;
