@@ -1,6 +1,7 @@
 #include "system.h"
 #include <format>
 #include <iostream>
+#include <map>
 
 System::System(const uint8_t* program, size_t size) {
 
@@ -19,52 +20,49 @@ void System::run_cycle() {
     uint8_t* X = _registers + ((NNN - NN) >> 8);
     uint8_t* Y = _registers + ((NN - N) >> 4);
 
-    typedef struct {
-        std::string Code;
-        std::function<void(uint16_t)> Handler;
-    } CodeHandler functions[35] = {
-            {"00E0", [&](uint16_t opc){ std::fill(std::begin(_display_buffer), std::end(_display_buffer), 0); }},
-            {"00EE", [&](uint16_t opc){
+    std::map<uint16_t, std::function<void(void)>> functions = {
+            {0x00E0, [&](){ std::fill(std::begin(_display_buffer), std::end(_display_buffer), 0); }},
+            {0x00EE, [&](){
                 if(_stack.empty()) std::cout<<"";
                 _program_counter = _stack.front();
                 _stack.pop_front();
                 _program_counter--;
             }},
-            {"1NNN", [&](uint16_t opc){ _program_counter = NNN - 1; }},
-            {"2NNN", [&](uint16_t opc){
+            {0x1000, [&](){ _program_counter = NNN - 1; }},
+            {0x2000, [&](){
                 _stack.push_back(_program_counter);
                 _program_counter = NNN - 1;
             }},
-            {"3XNN", [&](uint16_t opc){ if(*X == NN) _program_counter++; }},
-            {"4XNN", [&](uint16_t opc){ if(*X != NN) _program_counter++; }},
-            {"5XY0", [&](uint16_t opc){ if(*X == *Y) _program_counter++; }},
-            {"6XNN", [&](uint16_t opc){ *X = NN; }},
-            {"7XNN", [&](uint16_t opc){ *X += NN; }},
-            {"8XY0", [&](uint16_t opc){ *X = *Y; }},
-            {"8XY1", [&](uint16_t opc){ *X = *X | *Y; }},
-            {"8XY2", [&](uint16_t opc){ *X = *X & *Y; }},
-            {"8XY3", [&](uint16_t opc){ *X = *X ^ *Y; }},
-            {"8XY4", [&](uint16_t opc){ *X += *Y; }}, // need to handle carry flag
-            {"8XY5", [&](uint16_t opc){ *X = *X - *Y; }},
-            {"8XY6", [&](uint16_t opc){ *X = *Y; *X >>= 1; }},
-            {"8XY7", [&](uint16_t opc){ *X = *Y - *X; }},
-            {"8XYE", [&](uint16_t opc){ *X = *Y; *X <<= 1; }},
-            {"9XY0", [&](uint16_t opc){ if(*X != *Y) _program_counter++; }},
-            {"ANNN", [&](uint16_t opc){ _index_register = NNN; }},
-            {"BNNN", [&](uint16_t opc){ _program_counter = NNN + _registers[0]; }},
-            {"CXNN", [&](uint16_t opc){ *X = rand() & NN; }},
-            {"DXYN", [&](uint16_t opc){}},
-            {"EX9E", [&](uint16_t opc){}},
-            {"EXA1", [&](uint16_t opc){}},
-            {"FX07", [&](uint16_t opc){}},
-            {"FX0A", [&](uint16_t opc){}},
-            {"FX15", [&](uint16_t opc){}},
-            {"FX18", [&](uint16_t opc){}},
-            {"FX1E", [&](uint16_t opc){}},
-            {"FX29", [&](uint16_t opc){}},
-            {"FX33", [&](uint16_t opc){}},
-            {"FX55", [&](uint16_t opc){}},
-            {"FX65", [&](uint16_t opc){}}
+            {0x3000, [&](){ if(*X == NN) _program_counter++; }},
+            {0x4000, [&](){ if(*X != NN) _program_counter++; }},
+            {0x5000, [&](){ if(*X == *Y) _program_counter++; }},
+            {0x6000, [&](){ *X = NN; }},
+            {0x7000, [&](){ *X += NN; }},
+            {0x8000, [&](){ *X = *Y; }},
+            {0x8001, [&](){ *X = *X | *Y; }},
+            {0x8002, [&](){ *X = *X & *Y; }},
+            {0x8003, [&](){ *X = *X ^ *Y; }},
+            {0x8004, [&](){ *X += *Y; }}, // need to handle carry flag
+            {0x8005, [&](){ *X = *X - *Y; }},
+            {0x8006, [&](){ *X = *Y; *X >>= 1; }},
+            {0x8007, [&](){ *X = *Y - *X; }},
+            {0x800E, [&](){ *X = *Y; *X <<= 1; }},
+            {0x9000, [&](){ if(*X != *Y) _program_counter++; }},
+            {0xA000, [&](){ _index_register = NNN; }},
+            {0xB000, [&](){ _program_counter = NNN + _registers[0]; }},
+            {0xC000, [&](){ *X = rand() & NN; }},
+            {0xD000, [&](){  }},
+            {0xE09E, [&](){}},
+            {0xE0A1, [&](){}},
+            {0xF007, [&](){}},
+            {0xF00A, [&](){}},
+            {0xF015, [&](){}},
+            {0xF018, [&](){}},
+            {0xF01E, [&](){}},
+            {0xF029, [&](){}},
+            {0xF033, [&](){}},
+            {0xF055, [&](){}},
+            {0xF065, [&](){}}
     };
 
     _program_counter++;
