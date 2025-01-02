@@ -15,7 +15,9 @@ private:
     uint16_t _index_register;
     uint16_t _program_counter;
 
-    uint8_t _display_buffer[128 * 64];
+    // 64 x 32 display, where each bit is one pixel.
+    // Stored column-major for drawing simplicity
+    uint8_t _display_buffer[(64 / 8) * 32];
 
     uint8_t _delay_timer;
     uint8_t _sound_timer;
