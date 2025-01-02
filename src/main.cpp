@@ -1,8 +1,10 @@
+#include "chip8.h"
 #include <iostream>
 #include <SDL.h>
 #include <SDL_mixer.h>
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    Chip8 emulator("pic.ch8");
+    emulator.run();
     return 0;
 }

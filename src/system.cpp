@@ -1,9 +1,9 @@
 #include "system.h"
-#include <format>
 #include <iostream>
+#include <iomanip>
 #include <map>
 
-System::System(const uint8_t* program, size_t size) {
+System::System(const uint8_t* program, size_t program_size) {
     _program_counter = 0x200;
 
     _display_width = 64;
@@ -40,6 +40,7 @@ System::System(const uint8_t* program, size_t size) {
                             0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
                             0xF0, 0x80, 0xF0, 0x80, 0x80}; // F
     memcpy(_memory + 0x50, font, 5 * 16);
+    memcpy(_memory + 0x200, program, program_size);
 }
 
 void System::run_cycle() {
@@ -55,7 +56,7 @@ void System::run_cycle() {
     uint8_t* X = _registers + ((NNN - NN) >> 8);
     uint8_t* Y = _registers + ((NN - N) >> 4);
 
-    std::map<uint16_t, std::function<void(void)>> functions = {
+    std::map<uint16_t, std::function<void(void)>> handlers = {
             {0x00E0, [&](){ std::fill(_display_buffer, _display_buffer + _display_size, 0); }},
             {0x00EE, [&](){
                 if(_stack.empty()) std::cout<<"";
@@ -117,4 +118,23 @@ void System::run_cycle() {
     };
 
     _program_counter++;
+
+    uint8_t opc_mask_nnn = opcode & 0xF000;
+    uint8_t opc_mask_xy = opcode & 0xF00F;
+    uint8_t opc_mask_x = opcode & 0xF0FF;
+
+    if(handlers.contains(opc_mask_x)) {
+        std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_x << std::endl;
+        handlers[opc_mask_x]();
+    }
+    else if(handlers.contains(opc_mask_xy)) {
+        std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_xy << std::endl;
+        handlers[opc_mask_xy]();
+    }
+    else if(handlers.contains(opc_mask_nnn)) {
+        std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_nnn << std::endl;
+        handlers[opc_mask_nnn]();
+    }
+    else
+        std::cerr << "Failed processing instruction " << opcode << std::endl;
 }

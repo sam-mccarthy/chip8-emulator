@@ -30,5 +30,12 @@ void Chip8::load_file(const std::string &filename) {
 }
 
 void Chip8::run() {
+    bool exit = false;
     System system(_program, _program_size);
+    while(!exit){
+        system.run_cycle();
+        // We'll want to handle SDL things in the future.
+
+        exit = true;
+    }
 }
