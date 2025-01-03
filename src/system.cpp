@@ -145,3 +145,8 @@ bool System::run_cycle() {
 
     return false;
 }
+
+void System::set_key(int index, bool state) {
+    if(index >= 0 && index < 16)
+        _keys[index] = state;
+}

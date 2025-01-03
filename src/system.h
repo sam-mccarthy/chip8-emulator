@@ -8,6 +8,7 @@ class System {
 public:
     System(const uint8_t* program, size_t size);
     bool run_cycle();
+    void set_key(int index, bool state);
 private:
     uint8_t _memory[4096];
     uint8_t _registers[16];
