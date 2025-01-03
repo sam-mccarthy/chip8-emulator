@@ -43,7 +43,7 @@ System::System(const uint8_t* program, size_t program_size) {
     memcpy(_memory + 0x200, program, program_size);
 }
 
-void System::run_cycle() {
+bool System::run_cycle() {
     // Create opcode from two adjacent bytes in memory
     uint16_t opcode = _memory[_program_counter] << 8 | _memory[_program_counter + 1];
 
@@ -62,16 +62,16 @@ void System::run_cycle() {
                 if(_stack.empty()) std::cout<<"";
                 _program_counter = _stack.front();
                 _stack.pop_front();
-                _program_counter--;
+                _program_counter -= 2;
             }},
-            {0x1000, [&](){ _program_counter = NNN - 1; }},
+            {0x1000, [&](){ _program_counter = NNN - 2; }},
             {0x2000, [&](){
                 _stack.push_back(_program_counter);
-                _program_counter = NNN - 1;
+                _program_counter = NNN - 2;
             }},
-            {0x3000, [&](){ if(*X == NN) _program_counter++; }},
-            {0x4000, [&](){ if(*X != NN) _program_counter++; }},
-            {0x5000, [&](){ if(*X == *Y) _program_counter++; }},
+            {0x3000, [&](){ if(*X == NN) _program_counter += 2; }},
+            {0x4000, [&](){ if(*X != NN) _program_counter += 2; }},
+            {0x5000, [&](){ if(*X == *Y) _program_counter += 2; }},
             {0x6000, [&](){ *X = NN; }},
             {0x7000, [&](){ *X += NN; }},
             {0x8000, [&](){ *X = *Y; }},
@@ -83,7 +83,7 @@ void System::run_cycle() {
             {0x8006, [&](){ *X = *Y; *X >>= 1; }},
             {0x8007, [&](){ *X = *Y - *X; }},
             {0x800E, [&](){ *X = *Y; *X <<= 1; }},
-            {0x9000, [&](){ if(*X != *Y) _program_counter++; }},
+            {0x9000, [&](){ if(*X != *Y) _program_counter += 2; }},
             {0xA000, [&](){ _index_register = NNN; }},
             {0xB000, [&](){ _program_counter = NNN + _registers[0]; }},
             {0xC000, [&](){ *X = rand() & NN; }},
@@ -100,10 +100,10 @@ void System::run_cycle() {
                         _display_buffer[(x / 8 + 1) * _display_height + y + i] ^= _memory[_index_register + i] << (8 - offset);
                 }
             }},
-            {0xE09E, [&](){ if(_keys[*X]) _program_counter++; }},
-            {0xE0A1, [&](){ if(!_keys[*X]) _program_counter++; }},
+            {0xE09E, [&](){ if(_keys[*X]) _program_counter += 2; }},
+            {0xE0A1, [&](){ if(!_keys[*X]) _program_counter += 2; }},
             {0xF007, [&](){ *X = _delay_timer; }},
-            {0xF00A, [&](){ if(!_keys[*X]) _program_counter--; }},
+            {0xF00A, [&](){ if(!_keys[*X]) _program_counter -= 2; }},
             {0xF015, [&](){ _delay_timer = *X; }},
             {0xF018, [&](){ _sound_timer = *X; }},
             {0xF01E, [&](){ _index_register += *X; }},
@@ -117,24 +117,31 @@ void System::run_cycle() {
             {0xF065, [&](){ memcpy(_registers, _memory + _index_register, *X + 1); }}
     };
 
-    _program_counter++;
+    _program_counter += 2;
+    if(_program_counter > 4096)
+        _program_counter = 0;
 
-    uint8_t opc_mask_nnn = opcode & 0xF000;
-    uint8_t opc_mask_xy = opcode & 0xF00F;
-    uint8_t opc_mask_x = opcode & 0xF0FF;
+    uint16_t opc_mask_nnn = opcode & 0xF000;
+    uint16_t opc_mask_xy = opcode & 0xF00F;
+    uint16_t opc_mask_x = opcode & 0xF0FF;
 
+    //std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opcode << std::endl;
     if(handlers.contains(opc_mask_x)) {
-        std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_x << std::endl;
+        //std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_x << std::endl;
         handlers[opc_mask_x]();
     }
     else if(handlers.contains(opc_mask_xy)) {
-        std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_xy << std::endl;
+        //std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_xy << std::endl;
         handlers[opc_mask_xy]();
     }
     else if(handlers.contains(opc_mask_nnn)) {
-        std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_nnn << std::endl;
+        //std::cout << std::setfill('0') << std::setw(4) << std::hex << (int)opc_mask_nnn << std::endl;
         handlers[opc_mask_nnn]();
     }
-    else
-        std::cerr << "Failed processing instruction " << opcode << std::endl;
+    else {
+        std::cout << "Failed processing instruction " << std::setfill('0') << std::setw(4) << std::hex << (int) opcode
+                  << std::endl;
+    }
+
+    return false;
 }

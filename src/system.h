@@ -7,7 +7,7 @@
 class System {
 public:
     System(const uint8_t* program, size_t size);
-    void run_cycle();
+    bool run_cycle();
 private:
     uint8_t _memory[4096];
     uint8_t _registers[16];
